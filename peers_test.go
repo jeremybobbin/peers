@@ -84,7 +84,7 @@ func TestConnect(t *testing.T) {
 
 func TestFamilies(t *testing.T) {
 	nodes := Connect[string, byte](keys, derive)
-	Prune(nodes, prune)
+	PruneByWeight(nodes, prune)
 	got := Families(nodes)
 	for i := range families {
 		sort.Strings(families[i])
@@ -128,7 +128,7 @@ func TestCoagulate(t *testing.T) {
 	}
 
 	nodes := Connect[string, byte](keys, derive)
-	Prune(nodes, prune)
+	PruneByWeight(nodes, prune)
 	Coagulate(Families(nodes))
 	got := Families(nodes)
 

@@ -7,30 +7,41 @@ type Node[K comparable, V any] struct {
 	Peers PeerMap[K, V]
 }
 
-// determines, based on their relationship(V), if they should be connected
-type Judge[K comparable, V any] func(V) bool
-
 // determins what their relationship is
 type Derive[K comparable, V any] func(K, K) (V, V)
 
 // Prune will disconnect nodes if they don't "belong"
 // belong is a predicate that takes the weight of any 2 nodes
-func Prune[K comparable, V any](nodes []*Node[K, V], belongs Judge[K, V]) {
+func Prune[K comparable, V any](nodes []*Node[K, V], belongs func(*Node[K, V], *Node[K, V]) bool) {
 	for i := 0; i < len(nodes); i++ {
 		for j := i+1; j < len(nodes); j++ {
-			a, aok := nodes[i].Peers[nodes[j]]
-			b, bok := nodes[j].Peers[nodes[i]]
-			if (aok && !belongs(a)) || (bok && !belongs(b)) {
-				if aok {
-					delete(nodes[i].Peers, nodes[j])
-				}
-				if bok {
-					delete(nodes[j].Peers, nodes[i])
-				}
+			if _, ok := nodes[i].Peers[nodes[j]]; ok && !belongs(nodes[i], nodes[j]) {
+				delete(nodes[i].Peers, nodes[j])
+			}
+			if _, ok := nodes[j].Peers[nodes[i]]; ok && !belongs(nodes[j], nodes[i]) {
+				delete(nodes[j].Peers, nodes[i])
 			}
 		}
 	}
 }
+
+
+// Prune will disconnect nodes if they don't "belong"
+// belong is a predicate that takes the weight of any 2 nodes
+func PruneByWeight[K comparable, V any](nodes []*Node[K, V], belongs func(V) bool) {
+	Prune(nodes, func(a *Node[K, V], b *Node[K, V]) bool {
+		return belongs(a.Peers[b])
+	})
+}
+
+// Prune will disconnect nodes if they don't "belong"
+// belong is a predicate that takes the weight of any 2 nodes
+func PruneByKey[K comparable, V any](nodes []*Node[K, V], belongs func(K, K) bool) {
+	Prune(nodes, func(a *Node[K, V], b *Node[K, V]) bool {
+		return belongs(a.Key, b.Key)
+	})
+}
+
 
 // takes a set of keys & a derive function(that determines the weight of the relationship),
 // and returns a set of interconnected nodes(a weighted graph)
