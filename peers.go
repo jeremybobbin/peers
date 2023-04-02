@@ -160,8 +160,8 @@ if 1 2 3 4 passed, then no need to test 1 2 3 or 2 3 4, since we're not returnin
 // - families can intersect, meaning, this Families function
 //   will return duplicated Node pointers
 */
+
 func Families[K comparable, V any](nodes []*Node[K, V]) [][]*Node[K, V] {
-	//fmt.Println("families:", nodes)
 	var families [][]*Node[K, V]
 
 	for n := len(nodes); n >= 2; n-- {
@@ -201,6 +201,36 @@ func Families[K comparable, V any](nodes []*Node[K, V]) [][]*Node[K, V] {
 		}
 	}
 	return families
+}
+
+func FamiliesFromGroups[K comparable, V any](groups [][]*Node[K, V]) [][]*Node[K, V] {
+	var families [][]*Node[K, V]
+
+	for i := range groups {
+		sub := Families(groups[i])
+		for j := range sub {
+			if !subsetOfAny(families, sub[j]) {
+				families = append(families, sub[j])
+			}
+		}
+	}
+	return families
+}
+
+// returns a node & all of its peers UNORDERED
+func Group[K comparable, V any](node *Node[K, V]) []*Node[K, V] {
+	group := []*Node[K, V]{ node }
+	for peer := range node.Peers {
+		group = append(group, peer)
+	}
+	return group
+}
+
+func Groups[K comparable, V any](nodes []*Node[K, V]) (groups [][]*Node[K, V]) {
+	for i := range nodes {
+		groups = append(groups, Group(nodes[i]))
+	}
+	return
 }
 
 
