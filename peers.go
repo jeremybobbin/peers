@@ -62,6 +62,40 @@ func Connect[K comparable, V any](src []K, derive Derive[K, V]) []*Node[K, V] {
 	return dst
 }
 
+// change V to another type, only running derive on the already-connected nodes 
+func Map[K comparable, V1, V2 any](src []*Node[K, V1], derive Derive[K, V2]) []*Node[K, V2] {
+	dst := make([]*Node[K, V2], len(src))
+
+	i := 0
+	j := 1
+	for i < len(src)-1 {
+		if i == 0 {
+			if j == 1 {
+				dst[i] = &Node[K, V2]{
+					Key: src[0].Key,
+					Peers: make(PeerMap[K, V2]),
+				}
+			}
+			dst[j] = &Node[K, V2]{
+				Key: src[j].Key,
+				Peers: make(PeerMap[K, V2]),
+			}
+		}
+		_, ok1 := src[i].Peers[src[j]]
+		_, ok2 := src[j].Peers[src[i]]
+		if ok1 && ok2 {
+			dst[i].Peers[dst[j]], dst[j].Peers[dst[i]] = derive(src[i].Key, src[j].Key)
+		}
+
+		j++
+		if j == len(src) {
+			i++
+			j = i+1
+		}
+	}
+	return dst
+}
+
 // if these nodes point at eachother
 func IsRelated[K comparable, V any](n1, n2 *Node[K, V]) bool {
 	_, ok1 := n1.Peers[n2]
