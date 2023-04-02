@@ -129,6 +129,18 @@ func IsFamily[K comparable, V any](nodes []*Node[K, V]) bool {
 	return true
 }
 
+// if everyone is interconnected, it's a family
+func IsFamilyByIndex[K comparable, V any](indicies []int, nodes []*Node[K, V]) bool {
+	for i := 0; i < len(indicies); i++ {
+		for j := i+1; j < len(indicies); j++ {
+			if !IsRelated(nodes[indicies[i]], nodes[indicies[j]]) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 /*
 
 Test at nodes at indicies like this:
@@ -162,7 +174,7 @@ if 1 2 3 4 passed, then no need to test 1 2 3 or 2 3 4, since we're not returnin
 */
 
 func Families[K comparable, V any](nodes []*Node[K, V]) [][]*Node[K, V] {
-	var families [][]*Node[K, V]
+	var familyIndicies [][]int
 
 	for n := len(nodes); n >= 2; n-- {
 		d := make([]int, n)
@@ -192,14 +204,20 @@ func Families[K comparable, V any](nodes []*Node[K, V]) [][]*Node[K, V] {
 					d[i] = d[i-1]+1
 				}
 			}
-			group := indiciesToElements(nodes, d)
-			if IsFamily(group) {
-				if !subsetOfAny(families, group) {
-					families = append(families, group)
+			if !subsetOfAny(familyIndicies, d) {
+				if IsFamilyByIndex(d, nodes) {
+					familyIndicies = append(familyIndicies, d)
+					d = make([]int, n)
 				}
 			}
 		}
 	}
+	var families [][]*Node[K, V]
+
+	for i := range familyIndicies {
+		families = append(families, indiciesToElements(nodes, familyIndicies[i]))
+	}
+
 	return families
 }
 
