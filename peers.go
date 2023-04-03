@@ -1,5 +1,9 @@
 package peers
 
+import (
+	"sort"
+)
+
 // K is the ID, V is the relationship(weight) that K1 & K2 share
 type PeerMap[K comparable, V any] map[*Node[K, V]]V
 type Node[K comparable, V any] struct {
@@ -105,6 +109,31 @@ func Map[K comparable, V1, V2 any](src []*Node[K, V1], derive Derive[K, V2]) []*
 		}
 	}
 	return dst
+}
+
+
+// Limit a node to N Peers, sorted by less
+func LimitPeers[K comparable, V any](node *Node[K, V], limit int, less func(*Node[K, V], *Node[K, V]) bool) {
+	peers := make([]*Node[K, V], len(node.Peers))
+	i := 0
+	for peer := range node.Peers {
+		peers[i] = peer
+		i++
+	}
+	sort.Slice(peers, func(i, j int) bool {
+		return less(peers[i], peers[j])
+	})
+	for i := limit; i < len(peers); i++ {
+		delete(node.Peers, peers[i])
+		delete(peers[i].Peers, node)
+	}
+}
+
+// Limit a node to N Peers based on relationship priority
+func LimitPeersByWeight[K comparable, V any](node *Node[K, V], limit int, less func(V, V) bool) {
+	LimitPeers(node, limit, func (n1, n2 *Node[K, V]) bool {
+		return less(node.Peers[n1], node.Peers[n2])
+	})
 }
 
 // if these nodes point at eachother
