@@ -280,6 +280,13 @@ func Groups[K comparable, V any](nodes []*Node[K, V]) (groups [][]*Node[K, V]) {
 	return
 }
 
+func Fold[K comparable, V any](node *Node[K, V], init V, fn func(V, V) V) V {
+	for _, val := range node.Peers {
+		init = fn(init, val)
+	}
+	return init
+}
+
 
 /*
 	cuts ties of nodes outside beyond direct family
